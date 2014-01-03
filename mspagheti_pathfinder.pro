@@ -67,9 +67,11 @@ f1=f_basename+string(N_frames/2,FORMAT="(I03)")+'L.fit'
       cen_list[i-1,0]=difs[0]; max_x-axc
       cen_list[i-1, 1]=difs[1] ;max_y-ayc
       
-      endfor
-      forprint, cen_list[*, 0], cen_list[*, 1], TEXTOUT = f_basename, COMMENT = '; x, y (pixels)'
-      return, 1
+ endfor
+ 
+      fn_out=f_basename+'xy.txt'
+      forprint, cen_list[*, 0], cen_list[*, 1], TEXTOUT = fn_out, COMMENT = '; x, y (pixels)'
+      return, fn_out
 
 end
 
@@ -80,7 +82,6 @@ end
   ;Report image properties reached (per pixel)
   ;Make fits header
   ;Save combined fits file
-  
 function mspagheti_coadd, f_basename, xy_fn
 
 ;Read in files and x,y centers
@@ -137,14 +138,16 @@ wcomb_e=fltarr(1024*bf, 1024*bf)
     wcomb_n=wcomb/max(wcomb)
     
     ;Write the non-rotated frame
-     writefits,f_basename+'comb.fits',wcomb_n
+    fn_out=f_basename+'comb.fits'
+    writefits,f_basename+'comb.fits',wcomb_n
+    
+    return, fn_out
     
 end  
   
 
 ;Function 3a Determine rotation
   ;Determine rotation by hand
-  
 function mspagheti_detRot, fn_comb  
 
       wcomb_n=readfits(fn_comb)
@@ -211,7 +214,6 @@ end
 
 ;Function 3b Optionally rotate
   ;Perform rotation
-  
 function mspagheti_perfRot, fn_comb, theta_deg
 
       wcomb_n=readfits(fn_comb)
@@ -224,8 +226,9 @@ function mspagheti_perfRot, fn_comb, theta_deg
       wcn_rot=rot(wcomb_ex, theta_deg, 1, xcen, ycen, /cubic)
 
     ;Write the fits files
-    writefits,fn_comb+'_rot.fits',wcn_rot
-    return, 1
+    fn_out=file_basename(fn_comb, '.fits')+'_rot.fits'
+    writefits,fn_out,wcn_rot
+    return, fn_out
     
 end    
 
@@ -242,7 +245,7 @@ end
 ;-------Analyze-------
 
 ;Function 7 2D intercomparisons saved to .eps files.
-  ;Check for existing data (flags passed from above)  
+  ;Check for existing data (flags passed from above)
 
 ;Function 8 1D cross-cut saved to .eps files.
   ;Check for existing data (flags passed from above)
@@ -261,18 +264,21 @@ d_mm=6.0
 fl_mm=838.0
 wl_nm=632.8
 bl_ang_deg=54.7
+N_frames=256
+axc=15.0
+ayc=12.0
 
 ;Function 1 Find drift 
-  ;Align/register (Gaussian with sub frame and approx x,y-center)
-  ;inputs: 
-      ;file basename
-      ;Number of frames
-      ;aproximate x center
-      ;approximate y center
-  ;outputs: 
-      ;text file with xy centers vs frame number
-      drift_out=mspagheti_drift(f_basename, N_frames, axc, ayc)
+      fn_xy=mspagheti_drift(filename, N_frames, axc, ayc)
 
+;Function 2 Coadd files
+      fn_comb=mspagheti_coadd(filename, fn_xy)
+      
+;Function 3a Determine rotation
+      theta_deg=mspagheti_detRot(fn_comb)      
+
+;Function 3b Optionally rotate
+      fn_rot=mspagheti_perfRot(fn_comb, theta_deg)
 
 print, 1
 
