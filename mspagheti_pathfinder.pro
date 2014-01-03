@@ -68,10 +68,9 @@ f1=f_basename+string(N_frames/2,FORMAT="(I03)")+'L.fit'
       cen_list[i-1, 1]=difs[1] ;max_y-ayc
       
       endfor
-      forprint, cen_list[*, 0], cen_list[*, 1], TEXTOUT = f_basename, FORMAT = format, SILENT = SILENT, $ 
-      STARTLINE = startline, NUMLINE = numline, COMMENT = comment, $
-      SUBSET = subset, NoCOMMENT=Nocomment,STDOUT=stdout
-;+
+      forprint, cen_list[*, 0], cen_list[*, 1], TEXTOUT = f_basename, COMMENT = '; x, y (pixels)'
+      return, 1
+
 end
 
 ;Function 2 Coadd files
@@ -81,6 +80,67 @@ end
   ;Report image properties reached (per pixel)
   ;Make fits header
   ;Save combined fits file
+  
+function mspagheti_coadd, f_basename, xy_fn
+
+;Read in files and x,y centers
+readcol, x_cen, y_cen, filename=xy_fn
+
+  ;Coadd files
+  ;Determine image properties reached (per pixel)
+  ;Report image properties reached (per pixel)
+  ;Make fits header
+  ;Save combined fits file
+
+;time the running time
+start_time = SYSTIME(1) 
+
+pi=3.141592654
+
+;Combined files and single frames
+wcomb=fltarr(1024,1024)
+w=wcomb
+dark=wcomb
+bf=4.0 ;binning factor
+wcomb_e=fltarr(1024*bf, 1024*bf)
+  
+
+;Big for loop  
+  N=n_elements(x_cen)
+  
+  for i=1,N-1 do begin
+      
+      ;Single frames
+      
+      fn=f_basename+string(i,FORMAT="(I03)")+'L.fit'
+      if i gt 999 then fn =f_basename+string(i,FORMAT="(I04)")+'L.fit'
+      wtemp=readfits(fn)
+      darkname=f_basename+string(i,FORMAT="(I03)")+'D.fit'
+      if i gt 999 then darkname=f_basename+string(i,FORMAT="(I04)")+'D.fit'
+      darktemp=readfits(darkname)
+      
+      ;Subtract the dark
+      w=float(wtemp)-float(darktemp)
+          
+     ;Expand the data by rebinning by a binning factor, bf
+      exp_dat=rebin(w, 1024*bf, 1024*bf) ;expanded data
+      
+      ;Shift the now expanded data by dx, dy
+      sh_ex_dat=shift(exp_dat, x_cen[i]*bf, y_cen[i]*bf) ;shifted, expanded data
+      
+      ;big w combined
+      wcomb_e=wcomb_e+sh_ex_dat
+      
+    endfor
+
+    wcomb=rebin(wcomb_e, 1024, 1024)
+    wcomb_n=wcomb/max(wcomb)
+    
+    ;Write the non-rotated frame
+     writefits,f_basename+'comb.fits',wcomb_n
+    
+end  
+  
 
 ;Function 3 Optionally rotate
   ;Determine rotation (by hand?)
