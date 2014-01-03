@@ -1,7 +1,9 @@
 mSPAGHETI
 =========
 author: Michael Gully-Santiago (aka gully)
+coauthor: Amanda Turbyfill
 Date: January 2014
+written in IDL
 
 monochromatic Spectral Purity Analysis of Gratings with HDR to Enhance Technologies and  Instruments
 
