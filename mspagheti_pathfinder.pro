@@ -236,6 +236,40 @@ end
 ;------prepare comparison data-------
 
 ;Function 4 Create model PSF
+function mspagheti_mod_psf, d_mm, wl_nm, px_scl, dims
+
+;pixel scale is radians per pixel
+
+;This function makes a 2D model PSF on the same scaling as the data
+pi=3.141592564
+k_um=2.0*pi/(wl_nm/1000.0) ; um^-1
+
+arg= k_um*(d_mm*1000.0) ;k a
+
+;make a radial circle, units of pixels
+xc = 512.0
+yc = 512.0
+rr=fltarr(xc*2, yc*2)
+for i = 0, xc*2-1 do begin
+	for j = 0, yc*2-1 do begin
+		this_r=sqrt( (i-xc)^2 + (j-yc)^2 )
+		rr[i, j]=this_r
+	endfor
+endfor
+
+;convert radial circle to radian units:
+rr_rad=rr*px_scl
+
+full_arg=arg*sin(rr_rad)
+
+I_I0=(2.0*BesselJ(full_arg)/full_arg)^2.0
+
+;Consider normalizing here...
+
+arr_out=I_I0
+return, arr_out
+
+end
 
 ;Function 5 Determine if Mirror comparison exists
 
