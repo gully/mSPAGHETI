@@ -262,7 +262,7 @@ rr_rad=rr*px_scl
 
 full_arg=arg*sin(rr_rad)
 
-I_I0=(2.0*BesselJ(full_arg)/full_arg)^2.0
+I_I0=(2.0*BeselJ(full_arg)/full_arg)^2.0
 
 ;Consider normalizing here...
 
@@ -272,6 +272,18 @@ return, arr_out
 end
 
 ;Function 5 Determine if Mirror comparison exists
+function mspagheti_mirexist, fn
+
+if file_test(fn) then do begin
+	arr=readfits(fn)
+endif else begin
+	arr=fltarr(1024, 1024)+1.0E-8
+endelse
+
+return, arr
+
+end
+
 
 ;Function 6 Determine if Zygo PSF exists
   ;Register Zygo PSF and Spectral Purity
@@ -280,6 +292,8 @@ end
 
 ;Function 7 2D intercomparisons saved to .eps files.
   ;Check for existing data (flags passed from above)
+  
+  
 
 ;Function 8 1D cross-cut saved to .eps files.
   ;Check for existing data (flags passed from above)
