@@ -149,142 +149,19 @@ wcomb_e=fltarr(1024*bf, 1024*bf)
 end  
   
 
-=======
-;Function 3a Determine rotation
-  ;Determine rotation by hand
-function mspagheti_detRot, fn_comb  
-
-      wcomb_n=readfits(fn_comb)
-
-      ;finds position of maximum pixel
-      maxval=max(wcomb_n, pos)
-      xcen=pos mod 1024
-      ycen=pos/1024
-      
-      device, decomposed=0
-      loadct, 13
-      window, 10, xsize=1024, ysize=1024, Title='Click on the left side order'
-      disp_data=alog10(wcomb_n)
-      TVImage, bytscl(disp_data, -4.0, 0.0), /nointerpolation
-      
-      ;selects a distant point on the spec. dimension
-      ;  to the left of the brightest peak for angle determination
-      wset, 10
-      cursor, x1, y1, /down, /device
-      xyouts, x1, y1, "X", /device, charsize=2
-      
-      wait, 0.4
-      
-      ;selects a distant point on the spec. dimension
-      ;  to the right of the brightest peak for angle determination
-      window, 10, xsize=1024, ysize=1024, Title='Click on the right side order'
-      disp_data=alog10(wcomb_n)
-      TVImage, bytscl(disp_data, -4.0, 0.0), /nointerpolation
-      cursor, x2, y2, /down, /device
-      xyouts, x2, y2, "X", /device, charsize=2
-      
-      
-      ;Refine the position of the ghosts for rotation
-      s=12
-      ;Left side ghost
-      gh1_sa=wcomb_n[x1-s:x1+s, y1-s:y1+s] ;10 x 10 array for the x,y center fit
-      gh1_d=OB_fit_airy(gh1_sa, s, s, 1.65)
-      
-      ;Right side ghost
-      gh2_sa=wcomb_n[x2-s:x2+s, y2-s:y2+s] ;10 x 10 array for the x,y center fit
-      gh2_d=OB_fit_airy(gh2_sa, s, s, 1.65)
-      
-      ;Calculate the slope, m
-      ;Fit to the PSF makes a refined estimate for the slope
-      x1f=double(x1-gh1_d[0])
-      y1f=double(y1-gh1_d[1])
-      x2f=double(x2-gh2_d[0])
-      y2f=double(y2-gh2_d[1])
-      
-      ;Slope, m
-      m=double(y2f-y1f)/double(x2f-x1f)
-      
-      ;output the info
-      print, 'The slope is:'
-      print, m
-      
-      theta_rad=atan(m)
-      theta_deg=180.0/3.141592654*theta_rad
-      
-      print, "theta (deg) is:", theta_deg
-      
-      return, theta_deg
-end    
-
-;Function 3b Optionally rotate
-  ;Perform rotation
-function mspagheti_perfRot, fn_comb, theta_deg
-
-      wcomb_n=readfits(fn_comb)
-      ;perform the rotation.  do not use /pivot)
-      wcomb_ex=fltarr(1024*3.0, 1024*3.0)
-      wcomb_ex[1024:1024+1024-1, 1024:1024+1024-1]=wcomb_n
-      maxval=max(wcomb_ex, pos)
-      xcen=pos mod (1024*3)
-      ycen=pos/(1024*3)
-      wcn_rot=rot(wcomb_ex, theta_deg, 1, xcen, ycen, /cubic)
-
-    ;Write the fits files
-    fn_out=file_basename(fn_comb, '.fits')+'_rot.fits'
-    writefits,fn_out,wcn_rot
-    return, fn_out
-    
-end    
-
-
-;------prepare comparison data-------
-
-;Function 4 Create model PSF
-function mspagheti_mod_psf, d_mm, wl_nm, px_scl, dims
-
-;pixel scale is radians per pixel
-
-;This function makes a 2D model PSF on the same scaling as the data
-pi=3.141592564
-k_um=2.0*pi/(wl_nm/1000.0) ; um^-1
-
-arg= k_um*(d_mm*1000.0) ;k a
-
-;make a radial circle, units of pixels
-xc = 512.0
-yc = 512.0
-rr=fltarr(xc*2, yc*2)
-for i = 0, xc*2-1 do begin
-	for j = 0, yc*2-1 do begin
-		this_r=sqrt( (i-xc)^2 + (j-yc)^2 )
-		rr[i, j]=this_r
-	endfor
-endfor
-
-;convert radial circle to radian units:
-rr_rad=rr*px_scl
-
-full_arg=arg*sin(rr_rad)
-
-I_I0=(2.0*BeselJ(full_arg)/full_arg)^2.0
-
-;Consider normalizing here...
-
-arr_out=I_I0
-return, arr_out
-
-end
 
 ;Function 5 Determine if Mirror comparison exists
 function mspagheti_mirexist, fn
 
-if file_test(fn) then do begin
-	arr=readfits(fn)
-endif else begin
-	arr=fltarr(1024, 1024)+1.0E-8
-endelse
+;if file_test(fn) then begin
+;	arr=readfits(fn)
+;else begin
+;	arr=fltarr(1024, 1024)+1.0E-8
+;endif
+;
+;return, arr
 
-return, arr
+return, 1
 
 end
 
@@ -293,13 +170,15 @@ end
   ;Register Zygo PSF and Spectral Purity
 function mspagheti_Zygexist, fn
 
-if file_test(fn) then do begin
-	arr=readfits(fn)
-endif else begin
-	arr=fltarr(1024, 1024)+1.0E-8
-endelse
+;if file_test(fn) then do begin
+;	arr=readfits(fn)
+;endif else begin
+;	arr=fltarr(1024, 1024)+1.0E-8
+;endelse
+;
+;return, arr
 
-return, arr
+print, 1
 
 end  
 
@@ -310,6 +189,7 @@ end
   
 ;function 7a- need a function to put all postage stamps on same spatial scale
 function mspagheti_stamp_scl
+print, 1
 
 end
   
