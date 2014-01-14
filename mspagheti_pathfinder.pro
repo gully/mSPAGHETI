@@ -6,6 +6,38 @@
   ;Read in some user input for fits header
   ;History file?
   ;Mirror or grating?
+function mspagheti_inputs, fn
+
+dir1='/Users/gully/IDLWorkspace/mSPAGHETI/'
+fn='mSPAGHETI_analysis_log_2014.csv'
+
+;2) Read in the .xyz file data
+tag_arr= ['VERSION','DATASTART','DELIMITER','MISSINGVALUE','COMMENTSYMBOL',$
+   'FIELDCOUNT','FIELDTYPES','FIELDNAMES','FIELDLOCATIONS','FIELDGROUPS']
+tag_fmt='F,J,B,F,A,J,J(18),A(18),J(18),J(18)'
+create_struct, at_new, '',tag_arr, tag_fmt  
+
+at_new.version=1.0
+at_new.datastart=0
+at_new.delimiter=44
+at_new.missingvalue=!Values.F_NaN
+at_new.COMMENTSYMBOL=';'
+at_new.FIELDCOUNT=18
+;print, strcompress((transpose(transpose(string(this_template.fieldtypes))+replicate(',', 18))))
+at_new.FIELDTYPES=[ 3,  7,  7,  3,  7,  7,  3,  3,  4,  3,  4,  3,  7,  7,  7,  3,  3,  3]
+at_new.FIELDNAMES=["Num", "Project", "Part",  "Sub_area",  "Directory", "Basename",  "Acq_Date",  $
+      "d_mm", "wl",  "FL",  "ang", "N", "xc","yc","Note",  "f_missing", "f_nonstandard", "f_irror"]
+at_new.FIELDLOCATIONS=[ 0,  3,  12,  15,  17,  76,  103,  112,  115,  121,  125,  137,  141,  142,  143,  168,  170,  172]
+at_new.FIELDGROUPS=indgen(at_new.FIELDCOUNT)
+
+d0=read_ascii(dir1+fn, template=at_new)
+
+return, d0
+
+print, 1
+
+end
+
 
 
 ;Function 1 Find drift 
@@ -148,9 +180,9 @@ wcomb_e=fltarr(1024*bf, 1024*bf)
     
 end  
   
-
-
-
+;------------------------------------
+;Main procedure: mSPAGHETI_pathfinder
+;------------------------------------
 pro mSPAGHETI_pathfinder
 
 ;Inputs:
@@ -170,6 +202,8 @@ ayc=502.2
 
 ;Put in the cushing loop progress bar.
 ;Put in a flag for non-monotonic SNR 
+
+      d0=mspagheti_inputs(fn)
 
 ;Function 1 Find drift 
       fn_xy=mspagheti_drift(filename, N_frames, axc, ayc)
