@@ -42,13 +42,15 @@ f1=f_basename+string(N_frames/2,FORMAT="(I03)")+'L.fit'
   
   for i=1,N-1 do begin
       
+      mc_loopprogress,i,1,N-1
+      
       ;Single frames
       fn=filename+string(i,FORMAT="(I03)")+'L.fit'
       if i gt 999 then fn =filename+string(i,FORMAT="(I04)")+'L.fit'
-      wtemp=readfits(fn)
+      wtemp=readfits(fn, /silent)
       darkname=filename+string(i,FORMAT="(I03)")+'D.fit'
       if i gt 999 then darkname=filename+string(i,FORMAT="(I04)")+'D.fit'
-      darktemp=readfits(darkname)
+      darktemp=readfits(darkname, /silent)
       
       ;Subtract the dark
       w=float(wtemp)-float(darktemp)
@@ -85,7 +87,7 @@ end
 function mspagheti_coadd, f_basename, xy_fn
 
 ;Read in files and x,y centers
-readcol, x_cen, y_cen, filename=xy_fn
+readcol, xy_fn, x_cen, y_cen
 
   ;Coadd files
   ;Determine image properties reached (per pixel)
@@ -110,15 +112,16 @@ wcomb_e=fltarr(1024*bf, 1024*bf)
   N=n_elements(x_cen)
   
   for i=1,N-1 do begin
-      
+
+      mc_loopprogress,i,1,N-1      
       ;Single frames
       
       fn=f_basename+string(i,FORMAT="(I03)")+'L.fit'
       if i gt 999 then fn =f_basename+string(i,FORMAT="(I04)")+'L.fit'
-      wtemp=readfits(fn)
+      wtemp=readfits(fn, /silent)
       darkname=f_basename+string(i,FORMAT="(I03)")+'D.fit'
       if i gt 999 then darkname=f_basename+string(i,FORMAT="(I04)")+'D.fit'
-      darktemp=readfits(darkname)
+      darktemp=readfits(darkname, /silent)
       
       ;Subtract the dark
       w=float(wtemp)-float(darktemp)
@@ -257,16 +260,22 @@ end
 pro mSPAGHETI_pathfinder
 
 ;Inputs:
-dir1='/Users/gully/Astronomy/silicon/APRA_JPL/TJ07/D/'
+dir1='/Volumes/cambridge/Astronomy/silicon/APRA_JPL/E09/20131108/'
 cd, dir1
-filename='TJ07_d6mm_f838mm_632nm-'
-d_mm=6.0
+filename='E09_R3_d15mm_L632_f838-'
+d_mm=15.0
 fl_mm=838.0
 wl_nm=632.8
-bl_ang_deg=54.7
-N_frames=256
-axc=15.0
-ayc=12.0
+bl_ang_deg=71.6
+N_frames=25
+axc=693.9
+ayc=502.2
+
+;TODO
+;We need a method to automatically assign the approximate x-y centers.
+
+;Put in the cushing loop progress bar.
+;Put in a flag for non-monotonic SNR 
 
 ;Function 1 Find drift 
       fn_xy=mspagheti_drift(filename, N_frames, axc, ayc)
