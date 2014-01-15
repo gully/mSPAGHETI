@@ -11,10 +11,12 @@ function mspagheti_inputs, fn
 dir1='/Users/gully/IDLWorkspace/mSPAGHETI/'
 fn='mSPAGHETI_analysis_log_2014.csv'
 
+;at=ascii_template(dir1+fn)
+
 ;2) Read in the .xyz file data
 tag_arr= ['VERSION','DATASTART','DELIMITER','MISSINGVALUE','COMMENTSYMBOL',$
    'FIELDCOUNT','FIELDTYPES','FIELDNAMES','FIELDLOCATIONS','FIELDGROUPS']
-tag_fmt='F,J,B,F,A,J,J(18),A(18),J(18),J(18)'
+tag_fmt='F,J,B,F,A,J,J(19),A(19),J(19),J(19)'
 create_struct, at_new, '',tag_arr, tag_fmt  
 
 at_new.version=1.0
@@ -22,19 +24,17 @@ at_new.datastart=0
 at_new.delimiter=44
 at_new.missingvalue=!Values.F_NaN
 at_new.COMMENTSYMBOL=';'
-at_new.FIELDCOUNT=18
-;print, strcompress((transpose(transpose(string(this_template.fieldtypes))+replicate(',', 18))))
-at_new.FIELDTYPES=[ 3,  7,  7,  3,  7,  7,  3,  3,  4,  3,  4,  3,  7,  7,  7,  3,  3,  3]
+at_new.FIELDCOUNT=19
+;print, strcompress((transpose(transpose(string(at.fieldtypes))+replicate(',', 19))))
+at_new.FIELDTYPES=[ 3,  7,  7,  3,  7,  7,  3,  4,  4,  3,  4,  3,  4,  4,  7,  3,  3,  3,  3]
 at_new.FIELDNAMES=["Num", "Project", "Part",  "Sub_area",  "Directory", "Basename",  "Acq_Date",  $
-      "d_mm", "wl",  "FL",  "ang", "N", "xc","yc","Note",  "f_missing", "f_nonstandard", "f_irror"]
-at_new.FIELDLOCATIONS=[ 0,  3,  12,  15,  17,  76,  103,  112,  115,  121,  125,  137,  141,  142,  143,  168,  170,  172]
+      "d_mm", "wl",  "FL",  "ang", "N", "xc","yc","Note",  "f_missing", "f_nonstandard", "f_mirror", "f_reduce"]
+at_new.FIELDLOCATIONS=[0,  3,  12,  15,  17,  76,  103,  112,  117,  123,  127,  132,  136,  142,  148,  173,  175,  177,  179]
 at_new.FIELDGROUPS=indgen(at_new.FIELDCOUNT)
 
 d0=read_ascii(dir1+fn, template=at_new)
 
 return, d0
-
-print, 1
 
 end
 
@@ -197,39 +197,54 @@ pro mSPAGHETI_pathfinder
 ;TODO
 ;We need a method to automatically assign the approximate x-y centers.
  
-      d0=mspagheti_inputs(fn)
+d0=mspagheti_inputs(fn)
 
 
-id=60
+;Loop over the targets you wish to reduce
+;The f_reduce flag should be set to 1 for these cases.
 
-;Inputs:
-dir1=d0.directory[id]
-cd, dir1
-filename=d0.basename[id]
-d_mm=d0.d_mm[id]
-fl_mm=d0.fl[id]
-wl_nm=d0.wl[id]
-bl_ang_deg=d0.ang[id]
-N_frames=d0.N[id]
-axc=float(d0.xc[id])
-ayc=float(d0.yc[id])
+N_sources=n_elements(d0.f_reduce)
+for i=0, N_sources-1 do begin
 
+  id=i
+  
+  if d0.f_reduce[id] then begin
+    ;Inputs:
+    dir1=d0.directory[id]
+    cd, dir1
+    filename=d0.basename[id]
+    d_mm=d0.d_mm[id]
+    fl_mm=d0.fl[id]
+    wl_nm=d0.wl[id]
+    bl_ang_deg=d0.ang[id]
+    N_frames=d0.N[id]
+    axc=float(d0.xc[id])
+    ayc=float(d0.yc[id])
+      
+    ;Function 1 Find drift 
+          fn_xy=mspagheti_drift(filename, N_frames, axc, ayc)
+    
+    ;Function 2 Coadd files
+          fn_comb=mspagheti_coadd(filename, fn_xy)
+          ;Put in a flag for non-monotonic SNR
+    print, '-------------'
+    print, 'Reducing '+strcompress(string(id))
+    print, '-------------'
+  endif else begin
+    print, 'Skipping '+strcompress(string(id))
+  endelse
+endfor
+  
+  ;Todo:
+  ;  Put some outputs into some output file:
+    ;Combined file name
+    ;achieved SNR
+    ;achieved FWHM
+    ;final xc yc of comb file
+    
+  ;SNR tracking file for each frame?  
 
-;Function 1 Find drift 
-      fn_xy=mspagheti_drift(filename, N_frames, axc, ayc)
-
-;Function 2 Coadd files
-      fn_comb=mspagheti_coadd(filename, fn_xy)
-      ;Put in a flag for non-monotonic SNR     
-
-
-;Todo:
-;  Put some outputs into the log file:
-  ;Combined file name
-  ;achieved SNR
-  ;achieved FWHM
-  ;final xc yc of comb file
-  ;
+ 
 
 print, 1
 
