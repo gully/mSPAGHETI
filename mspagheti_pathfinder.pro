@@ -199,9 +199,8 @@ pro mSPAGHETI_pathfinder
  
       d0=mspagheti_inputs(fn)
 
-for i=0, 61-1 do begin
 
-id=i
+id=60
 
 ;Inputs:
 dir1=d0.directory[id]
@@ -214,33 +213,6 @@ bl_ang_deg=d0.ang[id]
 N_frames=d0.N[id]
 axc=float(d0.xc[id])
 ayc=float(d0.yc[id])
-
-;----------------
-;sandbox
-
-  print, [i, d0.num[id]]
-  
-if file_test(filename+'001L.fit') then begin
-  d1=readfits(filename+'001L.fit', /silent)
-  
-  window, 10, xsize=1024, ysize=1024
-  tvimage, bytscl(alog10(d1), 3, 4.5), /nointerpolation
-  junk1=d1*0
-  dw=10
-  junk1[axc-dw:axc+dw, ayc-dw:ayc+dw]=d1[axc-dw:axc+dw, ayc-dw:ayc+dw]
-  window, 11, xsize=1024, ysize=1024, xpos=1024
-  tvimage, bytscl(alog10(junk1), 3, 4.5), /nointerpolation
-
-endif else begin
-  print, '***********'
-  print,[i, d0.num[id]]
-  print, '***********'
-endelse
-
-wait, 1
-;-----------
-endfor
-
 
 
 ;Function 1 Find drift 
