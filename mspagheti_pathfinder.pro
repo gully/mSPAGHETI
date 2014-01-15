@@ -39,6 +39,14 @@ print, 1
 end
 
 
+;Function 0.9, find (most of) the approximate x, y centers automatically
+function mspagheti_axc_ayc, fn
+d1=readfits(fn, /silent)
+g=gauss2dfit(d1, A)
+axc=a[4]
+ayc=a[5]
+return, [axc, ayc]
+end
 
 ;Function 1 Find drift 
   ;Align/register (Gaussian with sub frame and approx x,y-center)
@@ -185,33 +193,71 @@ end
 ;------------------------------------
 pro mSPAGHETI_pathfinder
 
-;Inputs:
-dir1='/Volumes/cambridge/Astronomy/silicon/APRA_JPL/E09/20131108/'
-cd, dir1
-filename='E09_R3_d15mm_L632_f838-'
-d_mm=15.0
-fl_mm=838.0
-wl_nm=632.8
-bl_ang_deg=71.6
-N_frames=25
-axc=693.9
-ayc=502.2
 
 ;TODO
 ;We need a method to automatically assign the approximate x-y centers.
-
-;Put in the cushing loop progress bar.
-;Put in a flag for non-monotonic SNR 
-
+ 
       d0=mspagheti_inputs(fn)
+
+for i=0, 61-1 do begin
+
+id=i
+
+;Inputs:
+dir1=d0.directory[id]
+cd, dir1
+filename=d0.basename[id]
+d_mm=d0.d_mm[id]
+fl_mm=d0.fl[id]
+wl_nm=d0.wl[id]
+bl_ang_deg=d0.ang[id]
+N_frames=d0.N[id]
+axc=float(d0.xc[id])
+ayc=float(d0.yc[id])
+
+;----------------
+;sandbox
+
+  print, [i, d0.num[id]]
+  
+if file_test(filename+'001L.fit') then begin
+  d1=readfits(filename+'001L.fit', /silent)
+  
+  window, 10, xsize=1024, ysize=1024
+  tvimage, bytscl(alog10(d1), 3, 4.5), /nointerpolation
+  junk1=d1*0
+  dw=10
+  junk1[axc-dw:axc+dw, ayc-dw:ayc+dw]=d1[axc-dw:axc+dw, ayc-dw:ayc+dw]
+  window, 11, xsize=1024, ysize=1024, xpos=1024
+  tvimage, bytscl(alog10(junk1), 3, 4.5), /nointerpolation
+
+endif else begin
+  print, '***********'
+  print,[i, d0.num[id]]
+  print, '***********'
+endelse
+
+wait, 1
+;-----------
+endfor
+
+
 
 ;Function 1 Find drift 
       fn_xy=mspagheti_drift(filename, N_frames, axc, ayc)
 
 ;Function 2 Coadd files
       fn_comb=mspagheti_coadd(filename, fn_xy)
-      
+      ;Put in a flag for non-monotonic SNR     
 
+
+;Todo:
+;  Put some outputs into the log file:
+  ;Combined file name
+  ;achieved SNR
+  ;achieved FWHM
+  ;final xc yc of comb file
+  ;
 
 print, 1
 
