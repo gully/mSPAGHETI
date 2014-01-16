@@ -112,8 +112,26 @@ f1=f_basename+string(N_frames/2,FORMAT="(I03)")+'L.fit'
  endfor
  
       fn_out=f_basename+'xy.txt'
+      xx= cen_list[*, 0]
+      yy=cen_list[*, 1]
+      xrange=max(xx)-min(xx)
+      yrange=max(yy)-min(yy)
+      stddevx=stddev(xx)
+      stddevy=stddev(yy)
+      
       forprint, cen_list[*, 0], cen_list[*, 1], TEXTOUT = fn_out, COMMENT = '; x, y (pixels)'
-      return, fn_out
+      end_time = SYSTIME(1)
+      tot_time = end_time - start_time ; in seconds 
+      
+      
+      struct_out={drift_fn:fn_out, $
+                  drift_t:tot_time, $
+                  range_x:xrange,$
+                  range_y:yrange,$
+                  stddev_x:stddevx,$
+                  stddev_y:stddevy}
+      
+      return, struct_out
 
 end
 
@@ -142,14 +160,15 @@ pi=3.141592654
 
 ;Combined files and single frames
 wcomb=fltarr(1024,1024)
-w=wcomb
 dark=wcomb
 bf=4.0 ;binning factor
 wcomb_e=fltarr(1024*bf, 1024*bf)
-  
+
 
 ;Big for loop  
   N=n_elements(x_cen)
+  SNR_arr=fltarr(N)
+  bad_string=''
   
   for i=1,N-1 do begin
 
@@ -165,6 +184,11 @@ wcomb_e=fltarr(1024*bf, 1024*bf)
       
       ;Subtract the dark
       w=float(wtemp)-float(darktemp)
+      wcomb=wcomb+w    
+      ;estimate the noise properties
+      histogauss,wcomb, a1, /nofit, charsize=3, /noplot
+      SNR_arr[i]=max(wcomb)/a1[2]
+      if SNR_arr[i] lt SNR_arr[i-1] then bad_string=strcompress(bad_string+'/'+string(i))
           
      ;Expand the data by rebinning by a binning factor, bf
       exp_dat=rebin(w, 1024*bf, 1024*bf) ;expanded data
@@ -179,12 +203,30 @@ wcomb_e=fltarr(1024*bf, 1024*bf)
 
     wcomb=rebin(wcomb_e, 1024, 1024)
     wcomb_n=wcomb/max(wcomb)
+    histogauss,wcomb, a_out, /nofit, charsize=3
+    
+    ;Fit for the coefficient
+    n1=alog10(1.0+findgen(N-1))
+    y1=alog10(SNR_arr[1:*])
+    coeff=linfit(n1, y1, /double)
+    forprint, n1, y1, TEXTOUT = f_basename+'SNR.txt', COMMENT = '; N, SNR'
     
     ;Write the non-rotated frame
-    fn_out=f_basename+'comb.fits'
-    writefits,f_basename+'comb.fits',wcomb_n
+    fn_out=f_basename+'coadd.fits'
+    writefits,fn_out,wcomb_n
+
+    end_time=systime(1)
+    tot_time=end_time-start_time
     
-    return, fn_out
+    struct_out={coadd_fn:fn_out,$
+                hist_peak:a_out[1],$
+                hist_sig:a_out[2],$
+                log_SNR:alog10(1.0/a_out[2]),$
+                SNR_slope:coeff[1],$
+                SNR_offset:coeff[0],$
+                bad_frames:bad_string}
+    
+    return, struct_out
     
 end  
   
@@ -206,7 +248,7 @@ d0=mspagheti_inputs(fn)
 N_sources=n_elements(d0.f_reduce)
 for i=0, N_sources-1 do begin
 
-  id=i
+  id=60
   
   if d0.f_reduce[id] then begin
     ;Inputs:
@@ -221,11 +263,12 @@ for i=0, N_sources-1 do begin
     axc=float(d0.xc[id])
     ayc=float(d0.yc[id])
       
+      
     ;Function 1 Find drift 
-          fn_xy=mspagheti_drift(filename, N_frames, axc, ayc)
+          drift_out=mspagheti_drift(filename, N_frames, axc, ayc)
     
     ;Function 2 Coadd files
-          fn_comb=mspagheti_coadd(filename, fn_xy)
+          struct_out=mspagheti_coadd(filename, drift_out.drift_fn)
           ;Put in a flag for non-monotonic SNR
     print, '-------------'
     print, 'Reducing '+strcompress(string(id))
@@ -243,7 +286,7 @@ endfor
     ;final xc yc of comb file
     
   ;SNR tracking file for each frame?  
-
+  ;look for OBOE in coadd and xy functions.
  
 
 print, 1
