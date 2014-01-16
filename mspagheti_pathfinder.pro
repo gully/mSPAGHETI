@@ -2,10 +2,7 @@
 ;    with HDR to Enhance Technologies & Instruments
 
 
-;Function 0 Inputs
-  ;Read in some user input for fits header
-  ;History file?
-  ;Mirror or grating?
+;Function 0a Analysis Inputs
 function mspagheti_inputs, fn
 
 dir1='/Users/gully/IDLWorkspace/mSPAGHETI/'
@@ -37,6 +34,43 @@ d0=read_ascii(dir1+fn, template=at_new)
 return, d0
 
 end
+
+
+;Function 0b Result Outputs
+function mspagheti_outputs, fn
+
+dir1='/Users/gully/IDLWorkspace/mSPAGHETI/'
+fn='mSPAGHETI_results_log_2014.csv'
+
+;at=ascii_template(dir1+fn)
+
+;2) Read in the .xyz file data
+tag_arr= ['VERSION','DATASTART','DELIMITER','MISSINGVALUE','COMMENTSYMBOL',$
+   'FIELDCOUNT','FIELDTYPES','FIELDNAMES','FIELDLOCATIONS','FIELDGROUPS']
+tag_fmt='F,J,B,F,A,J,J(27),A(27),J(27),J(27)'
+create_struct, at_new, '',tag_arr, tag_fmt  
+
+at_new.version=1.0
+at_new.datastart=9
+at_new.delimiter=44
+at_new.missingvalue=!Values.F_NaN
+at_new.COMMENTSYMBOL=';'
+at_new.FIELDCOUNT=27
+;print, strcompress((transpose(transpose(string(at.fieldtypes))+replicate(',', 27))))
+at_new.FIELDTYPES=[ 3,  3,  3,  3,  3,  3,  7,  4,  4,  4,  4,  4,  7,  7,  4,  4,  4,  4,  4,  7,  4,  3,  4,  4,  4,  4,  4]
+at_new.FIELDNAMES=["Num", "range_x",  "range_y",  "stddev_x", "stddev_y", "drift_t",  "drift_fn", $
+       "hist_peak",  "hist_sig", "log_SNR",  "SNR_slope",  "SNR_offset", "bad_frames", "coadd_fn",$
+        "rot_ang",  "rot_ang_unc",  "xc_fin", "yc_fin", "rot_time", "rot_fn", "grat_period", $
+         "obs_order",  "ang_adj_order",  "plt_scale",  "FWHM_pred",  "FWHM_meas",  "FWHM_lam_d"]
+at_new.FIELDLOCATIONS=[ 0,  3,  6,  9,  12,  15,  18,  25,  30,  35,  40,  46,  52,  64,  71,  78,  84,  90,  98,  105,  113,  120,  123,  129,  136,  142,  148]
+at_new.FIELDGROUPS=indgen(at_new.FIELDCOUNT)
+
+d0=read_ascii(dir1+fn, template=at_new)
+
+return, d0
+
+end
+
 
 
 ;Function 0.9, find (most of) the approximate x, y centers automatically
@@ -135,6 +169,39 @@ f1=f_basename+string(N_frames/2,FORMAT="(I03)")+'L.fit'
 
 end
 
+
+;Function 1.9 Write to results log
+  ;inputs: a structure of results from a process
+  ;        the unique id number from the first column of the analysis and result logs
+  ;        the structure of results
+  ;outputs: updates the entries for that num_id
+function mspagheti_populate_results, this_struct, num_id, res_struct
+
+;First, find and list the tags in the result struct
+;Second, get tags of structure
+;Third, find the row where the num_id matches
+;Fourth, find where the tags match the column names
+;Fifth, populate the database with values
+;Sixth, save the database
+
+;1) find and list the tags in the result struct
+these_tags=get_tags(this_struct)
+
+;2) get tags of structure
+res_tags=get_tags(res_struct)
+
+;3) find the row where the num_id matches
+this_i=where(num_id eq res_struct.num)
+
+;4) find where the tags match the column names
+n_tags = n_elements(these_tags)
+for i=0, n_tags-1 do begin
+
+endfor
+
+end
+
+ 
 ;Function 2 Coadd files
   ;Read in files and x,y centes
   ;Coadd files
@@ -248,7 +315,7 @@ d0=mspagheti_inputs(fn)
 N_sources=n_elements(d0.f_reduce)
 for i=0, N_sources-1 do begin
 
-  id=60
+  id=i
   
   if d0.f_reduce[id] then begin
     ;Inputs:
