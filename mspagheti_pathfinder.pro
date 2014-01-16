@@ -196,7 +196,8 @@ this_i=where(num_id eq res_struct.num)
 ;4) find where the tags match the column names
 n_tags = n_elements(these_tags)
 for i=0, n_tags-1 do begin
-
+  this_tag=these_tags[i]
+  tag_loc=where(this_tag eq res_tags)
 endfor
 
 end
