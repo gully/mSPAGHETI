@@ -37,7 +37,7 @@ end
 
 
 ;Function 0b Result Outputs
-function mspagheti_outputs, fn
+function mspagheti_outputs
 
 dir1='/Users/gully/IDLWorkspace/mSPAGHETI/'
 fn='mSPAGHETI_results_log_2014.csv'
@@ -72,7 +72,6 @@ return, d0
 end
 
 
-
 ;Function 0.9, find (most of) the approximate x, y centers automatically
 function mspagheti_axc_ayc, fn
 d1=readfits(fn, /silent)
@@ -86,7 +85,6 @@ end
   ;Align/register (Gaussian with sub frame and approx x,y-center)
   ;[experimental] Align/register (cross-correlation)
   ;track goodness of fit
-        ;TODO: clean-up windows
         ;identify potential errors
   ;output: 
   ;  text file with xy centers
@@ -181,8 +179,9 @@ function mspagheti_populate_results, this_struct, num_id, res_struct
 ;Second, get tags of structure
 ;Third, find the row where the num_id matches
 ;Fourth, find where the tags match the column names
-;Fifth, populate the database with values
+;Fifth, populate the result_structure with values
 ;Sixth, save the database
+
 
 ;1) find and list the tags in the result struct
 these_tags=get_tags(this_struct)
@@ -194,11 +193,20 @@ res_tags=get_tags(res_struct)
 this_i=where(num_id eq res_struct.num)
 
 ;4) find where the tags match the column names
-n_tags = n_elements(these_tags)
-for i=0, n_tags-1 do begin
-  this_tag=these_tags[i]
-  tag_loc=where(this_tag eq res_tags)
-endfor
+match, these_tags, res_tags, suba, subb
+
+;5) populate the result_structure with values
+n_matched=n_elements(suba)
+if (n_matched ne -1) then begin
+  for i=0, n_matched-1 do begin
+    exec_string = 'res_struct'+these_tags[suba[i]]+'[num_id] = this_struct'+these_tags[suba[i]]
+    temp1=execute(exec_string)
+   endfor
+endif else begin
+  print, "The tags did not match"
+endelse
+
+return, res_struct
 
 end
 
@@ -303,12 +311,8 @@ end
 ;------------------------------------
 pro mSPAGHETI_pathfinder
 
-
-;TODO
-;We need a method to automatically assign the approximate x-y centers.
  
 d0=mspagheti_inputs(fn)
-
 
 ;Loop over the targets you wish to reduce
 ;The f_reduce flag should be set to 1 for these cases.
@@ -327,13 +331,16 @@ for i=0, N_sources-1 do begin
     fl_mm=d0.fl[id]
     wl_nm=d0.wl[id]
     bl_ang_deg=d0.ang[id]
-    N_frames=d0.N[id]
+    N_frames=13;d0.N[id]
     axc=float(d0.xc[id])
     ayc=float(d0.yc[id])
       
       
     ;Function 1 Find drift 
           drift_out=mspagheti_drift(filename, N_frames, axc, ayc)
+          
+res_struct=mspagheti_outputs()
+temp1=mspagheti_populate_results(drift_out, id, res_struct)
     
     ;Function 2 Coadd files
           struct_out=mspagheti_coadd(filename, drift_out.drift_fn)
@@ -346,17 +353,9 @@ for i=0, N_sources-1 do begin
   endelse
 endfor
   
-  ;Todo:
-  ;  Put some outputs into some output file:
-    ;Combined file name
-    ;achieved SNR
-    ;achieved FWHM
-    ;final xc yc of comb file
-    
-  ;SNR tracking file for each frame?  
-  ;look for OBOE in coadd and xy functions.
+    ;TODO
+    ;look for OBOE in coadd and xy functions.
  
-
 print, 1
 
 end
