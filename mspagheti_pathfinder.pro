@@ -210,6 +210,18 @@ return, res_struct
 
 end
 
+function mspagheti_struct_to_CSV
+;TODO: fill in content here
+
+;consider using:
+
+;1) Struct_print
+;struct_print, struct, [ lun=, filename=, tarray=, /no_head, /html, $
+;    fdigit=, ddigit=, alias=, formatcodes= ]
+
+;2) Write_IDLstruct
+
+end
  
 ;Function 2 Coadd files
   ;Read in files and x,y centes
@@ -341,6 +353,8 @@ for i=0, N_sources-1 do begin
           
 res_struct=mspagheti_outputs()
 temp1=mspagheti_populate_results(drift_out, id, res_struct)
+
+;write the structure out to the .CSV file.
     
     ;Function 2 Coadd files
           struct_out=mspagheti_coadd(filename, drift_out.drift_fn)
