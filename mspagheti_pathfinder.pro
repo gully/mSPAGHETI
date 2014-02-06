@@ -58,6 +58,7 @@ at_new.COMMENTSYMBOL=';'
 at_new.FIELDCOUNT=27
 ;print, strcompress((transpose(transpose(string(at.fieldtypes))+replicate(',', 27))))
 at_new.FIELDTYPES=[ 3,  3,  3,  3,  3,  3,  7,  4,  4,  4,  4,  4,  7,  7,  4,  4,  4,  4,  4,  7,  4,  3,  4,  4,  4,  4,  4]
+;at_new.FIELDTYPES=[ L, L,  L,  L,  L,  L,  A,  F,  F,  F,  F,  F,  A,  A,  F,  F,  F,  F,  F,  A,  F,  L,  F,  F,  F,  F,  F]
 at_new.FIELDNAMES=["Num", "range_x",  "range_y",  "stddev_x", "stddev_y", "drift_t",  "drift_fn", $
        "hist_peak",  "hist_sig", "log_SNR",  "SNR_slope",  "SNR_offset", "bad_frames", "coadd_fn",$
         "rot_ang",  "rot_ang_unc",  "xc_fin", "yc_fin", "rot_time", "rot_fn", "grat_period", $
@@ -210,16 +211,34 @@ return, res_struct
 
 end
 
-function mspagheti_struct_to_CSV
-;TODO: fill in content here
+function mspagheti_struct_to_CSV, rs
 
-;consider using:
+;write to this file, hardcode for now...
+dir1='/Users/gully/IDLWorkspace/mSPAGHETI/'
+fn_out='mSPAGHETI_results_log_2014_test.csv'
 
-;1) Struct_print
-;struct_print, struct, [ lun=, filename=, tarray=, /no_head, /html, $
-;    fdigit=, ddigit=, alias=, formatcodes= ]
+fld_nm=["Num", "range_x",  "range_y",  "stddev_x", "stddev_y", "drift_t",  "drift_fn", $
+       "hist_peak",  "hist_sig", "log_SNR",  "SNR_slope",  "SNR_offset", "bad_frames", "coadd_fn",$
+        "rot_ang",  "rot_ang_unc",  "xc_fin", "yc_fin", "rot_time", "rot_fn", "grat_period", $
+         "obs_order",  "ang_adj_order",  "plt_scale",  "FWHM_pred",  "FWHM_meas",  "FWHM_lam_d"]
 
-;2) Write_IDLstruct
+comment=strcompress((transpose(transpose(string(fld_nm))+replicate(',', 27))))
+
+;FTYPEZ=[ 3,  3,  3,  3,  3,  3,  7,  4,  4,  4,  4,  4,  7,  7,  4,  4,  4,  4,  4,  7,  4,  3,  4,  4,  4,  4,  4]
+ FTYPES= '(L,  L,  L,  L,  L,  L,  A,  F,  F,  F,  F,  F,  A,  A,  F,  F,  F,  F,  F,  A,  F,  L,  F,  F,  F,  F,  F)'
+ FMT1=strcompress(ftypes, /remove_all)
+;print, strcompress(+(transpose(string(fld_nm)+STRING(FTYPEZ))+replicate(',', 27)))
+
+
+;This is fucked.  There's got to be a better way.
+moreprint, rs.Num, rs.range_x, rs.range_y, rs.stddev_x, rs.stddev_y, rs.drift_t, $
+  rs.drift_fn, rs.hist_peak, rs.hist_sig, rs.log_SNR, rs.SNR_slope, rs.SNR_offset, $
+  rs.bad_frames, rs.coadd_fn, rs.rot_ang, rs.rot_ang_unc, rs.xc_fin, rs.yc_fin, $
+  rs.rot_time, rs.rot_fn, rs.grat_period, rs.obs_order, rs.ang_adj_order, rs.plt_scale, $
+  rs.FWHM_pred, rs.FWHM_meas, rs.FWHM_lam_d,TEXTOUT = dir1+fn_out ;, FORMAT = fmt1, COMMENT = comment
+
+
+return, 1
 
 end
  
@@ -349,15 +368,16 @@ for i=0, N_sources-1 do begin
       
       
     ;Function 1 Find drift 
-          drift_out=mspagheti_drift(filename, N_frames, axc, ayc)
+    drift_out=mspagheti_drift(filename, N_frames, axc, ayc)
           
-res_struct=mspagheti_outputs()
-temp1=mspagheti_populate_results(drift_out, id, res_struct)
+    res_struct=mspagheti_outputs()
+    rs=mspagheti_populate_results(drift_out, id, res_struct)
 
-;write the structure out to the .CSV file.
-    
+    ;write the structure out to the .CSV file.
+    temp1=mspagheti_struct_to_csv(rs)
+                   
     ;Function 2 Coadd files
-          struct_out=mspagheti_coadd(filename, drift_out.drift_fn)
+    struct_out=mspagheti_coadd(filename, drift_out.drift_fn)
           ;Put in a flag for non-monotonic SNR
     print, '-------------'
     print, 'Reducing '+strcompress(string(id))
